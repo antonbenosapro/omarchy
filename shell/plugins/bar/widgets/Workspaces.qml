@@ -45,26 +45,26 @@ BarWidget {
     onLoadFailed: root.readBlocks("")
   }
 
+  readonly property int monitorBaseId: {
+    if (root.monitorName === "HDMI-A-2" || (root.monitor && root.monitor.id === 1)) {
+      return 6
+    }
+    return 1
+  }
+
   function blockOf(id) {
-    return Math.floor((id - 1) / root.slots)
+    return id >= 6 ? 1 : 0
   }
 
   function slotOf(id) {
-    return (id - 1) % root.slots + 1
+    return id
   }
 
   function activeWorkspaceId() {
     return root.monitor && root.monitor.activeWorkspace ? root.monitor.activeWorkspace.id : -1
   }
 
-  // Until Hyprland has written the file, the workspace a monitor shows is in
-  // its own block.
-  readonly property int block: {
-    var block = root.blocks[root.monitorName]
-    if (block !== undefined) return block
-    var active = root.activeWorkspaceId()
-    return active > 0 ? root.blockOf(active) : 0
-  }
+  readonly property int block: root.monitorBaseId === 6 ? 1 : 0
 
   function workspaceById(id) {
     var values = Hyprland.workspaces.values
@@ -75,40 +75,33 @@ BarWidget {
     return null
   }
 
-  // The first five of the monitor's own, and any of the rest that exist. After
-  // them come workspaces that are only visiting: those of a monitor that is
-  // unplugged, which had no room to join this one's.
   function workspaceIds() {
-    var base = root.block * root.slots
-    var ids = [base + 1, base + 2, base + 3, base + 4, base + 5]
-    var guests = []
+    var base = root.monitorBaseId
+    var ids = [base, base + 1, base + 2, base + 3, base + 4]
     var values = Hyprland.workspaces.values
 
     for (var i = 0; i < values.length; i++) {
       var id = values[i].id
       if (id <= 0) continue
-      if (root.blockOf(id) === root.block) {
+      if (values[i].monitor && values[i].monitor.name === root.monitorName) {
         if (ids.indexOf(id) === -1) ids.push(id)
-      } else if (values[i].monitor && values[i].monitor.name === root.monitorName) {
-        guests.push(id)
       }
     }
 
     ids.sort(function(left, right) { return left - right })
-    guests.sort(function(left, right) { return left - right })
-    return ids.concat(guests)
+    return ids
   }
 
   function dispatch(expression) {
-    if (root.bar) root.bar.run("hyprctl dispatch " + Util.shellQuote(expression))
+    if (root.bar) root.bar.run("hyprctl dispatch " + expression)
+    else Util.execDetached("hyprctl dispatch " + expression)
   }
 
   function focusWorkspace(id) {
-    if (root.blockOf(id) === root.block) {
-      root.dispatch("o.workspaces.focus(" + root.slotOf(id) + ", \"" + root.monitorName + "\")")
-    } else {
-      root.dispatch("hl.dsp.focus({ workspace = \"" + id + "\" })")
+    if (typeof Hyprland !== "undefined" && typeof Hyprland.dispatch === "function") {
+      Hyprland.dispatch("workspace " + id)
     }
+    root.dispatch("workspace " + id)
   }
 
   // A wheel notch moves one entry along the row, and a touchpad adds up its
@@ -164,7 +157,8 @@ BarWidget {
     if (id === -1) return
     root.modeProcWorkspace = id
     root.modeProcGeneration = root.modeGeneration
-    modeProc.command = ["omarchy-hyprland-workspace-layout-current", String(id)]
+    var bin = Quickshell.env("OMARCHY_PATH") ? (Quickshell.env("OMARCHY_PATH") + "/bin/omarchy-hyprland-workspace-layout-current") : "omarchy-hyprland-workspace-layout-current"
+    modeProc.command = [bin, String(id)]
     modeProc.running = true
   }
 
@@ -178,9 +172,10 @@ BarWidget {
   // monitor's bar focuses that monitor first.
   function cycleLayout() {
     if (!root.bar) return
-    var command = "omarchy-hyprland-workspace-layout-toggle"
+    var bin = Quickshell.env("OMARCHY_PATH") ? (Quickshell.env("OMARCHY_PATH") + "/bin/omarchy-hyprland-workspace-layout-toggle") : "omarchy-hyprland-workspace-layout-toggle"
+    var command = bin
     if (root.monitor && !root.monitor.focused) {
-      command = "hyprctl dispatch " + Util.shellQuote("hl.dsp.focus({ monitor = \"" + root.monitorName + "\" })") + " >/dev/null && " + command
+      command = "hyprctl dispatch focusmonitor " + Util.shellQuote(root.monitorName) + " >/dev/null && " + command
     }
     root.bar.run(command)
   }
@@ -270,15 +265,18 @@ BarWidget {
         Layout.topMargin: firstGuest && root.vertical ? Style.space(6) : 0
 
         bar: root.bar
-        text: shown ? root.modeGlyph(root.activeMode) : (slot === root.slots ? "0" : String(slot))
+        text: shown ? root.modeGlyph(root.activeMode) : (modelData === 10 ? "0" : String(modelData))
         opacity: occupied || shown ? 1 : 0.5
         horizontalMargin: 6
         verticalPadding: 6
         fixedWidth: root.vertical ? root.barSize : Style.space(20)
         fixedHeight: root.barSize
-        onPressed: function() {
-          if (shown) root.cycleLayout()
-          else root.focusWorkspace(modelData)
+        onPressed: function(button) {
+          if (button === Qt.RightButton) {
+            root.cycleLayout()
+          } else {
+            root.focusWorkspace(modelData)
+          }
         }
         onWheelMoved: function(delta) { root.scrollWorkspaces(delta) }
       }
