@@ -223,14 +223,17 @@ QtObject {
     mergeShell()
   }
 
-  // Startup load only. Runtime theme switches push the payload explicitly
-  // through shell IPC.
+  // Startup load and runtime file watcher.
   property FileView colorsFile: FileView {
     id: colorsFile
     path: root.currentThemePath + "/colors.toml"
-    watchChanges: false
+    watchChanges: true
     printErrors: false
-    onLoaded: root.loadColors(text())
+    onLoaded: function() {
+      root.loadColors(text())
+      Style.scheduleRefresh()
+    }
+    onFileChanged: reload()
   }
   property FileView shellFile: FileView {
     id: shellFile

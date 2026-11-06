@@ -295,6 +295,14 @@ Item {
     }
   }
 
+  FileView {
+    id: backgroundLinkWatcher
+    path: root.currentBackgroundLink
+    watchChanges: true
+    printErrors: false
+    onFileChanged: root.refreshBackground()
+  }
+
   // The link's target when it exists, or else the theme's first background,
   // so a link left dangling still finds a wallpaper.
   Process {
