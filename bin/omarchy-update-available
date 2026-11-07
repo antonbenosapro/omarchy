@@ -4,6 +4,7 @@
 
 set -euo pipefail
 
+: "${OMARCHY_PATH:=/home/anton/shells/omarchy}"
 updates=()
 
 if [[ $OMARCHY_PATH != "/usr/share/omarchy" ]]; then

@@ -26,16 +26,22 @@ if [[ $mode != "--services-only" ]]; then
   kernel_updated=true
 
   # Every kernel package owns modules.builtin; Arch Linux ARM's ships no vmlinuz here (#12440).
-  for kernel in "$kernel_modules_path"/*/modules.builtin; do
-    if [[ -f $kernel ]] && pacman -Qo "$kernel" &>/dev/null; then
-      installed_kernel=$(basename "$(dirname "$kernel")")
+  if command -v pacman >/dev/null 2>&1; then
+    for kernel in "$kernel_modules_path"/*/modules.builtin; do
+      if [[ -f $kernel ]] && pacman -Qo "$kernel" &>/dev/null; then
+        installed_kernel=$(basename "$(dirname "$kernel")")
 
-      if [[ $installed_kernel == $running_kernel ]]; then
-        kernel_updated=false
-        break
+        if [[ $installed_kernel == $running_kernel ]]; then
+          kernel_updated=false
+          break
+        fi
       fi
+    done
+  else
+    if [[ -d "$kernel_modules_path/$running_kernel" ]]; then
+      kernel_updated=false
     fi
-  done
+  fi
 
   if [[ $kernel_updated == "true" ]]; then
     confirm_reboot "$(omarchy-i18n update.kernelReboot)"

@@ -8,6 +8,7 @@
 
 set -e
 
+: "${OMARCHY_PATH:=/home/anton/shells/omarchy}"
 update_stay_awake_stopped=0
 sudo_keepalive_pid=""
 

@@ -9,7 +9,7 @@
 # whichever go is on PATH uses its own root.
 unset GOROOT GOBIN
 
-if pacman -Qem >/dev/null; then
+if command -v pacman >/dev/null 2>&1 && pacman -Qem >/dev/null 2>&1; then
   if omarchy-pkg-aur-accessible; then
     echo -e "\e[32m\nUpdate AUR packages\e[0m"
     yay -Sua --noconfirm --cleanafter --ignore gcc14,gcc14-libs || exit 1
@@ -18,4 +18,8 @@ if pacman -Qem >/dev/null; then
     echo -e "\e[31m\nAUR is unavailable (so skipping updates)\e[0m"
     echo
   fi
+elif command -v flatpak >/dev/null 2>&1; then
+  echo -e "\e[32m\nUpdate Flatpak packages\e[0m"
+  flatpak update -y || true
+  echo
 fi

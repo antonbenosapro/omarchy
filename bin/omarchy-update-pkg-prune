@@ -9,5 +9,9 @@ set -e
 # packages update and the installed version survives with a spare. paccache
 # retains by version order, never by what is installed.
 echo -e "\e[32m\nPrune package cache\e[0m"
-sudo paccache -rk2 || echo -e "\e[33mCould not prune the package cache.\e[0m" >&2
+if command -v paccache >/dev/null 2>&1; then
+  sudo paccache -rk2 || echo -e "\e[33mCould not prune the package cache.\e[0m" >&2
+elif command -v apt-get >/dev/null 2>&1; then
+  sudo apt-get autoclean -y >/dev/null 2>&1 || true
+fi
 echo
