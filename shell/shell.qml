@@ -21,7 +21,9 @@ ShellRoot {
   // own empty copies.
   property PluginRegistry pluginRegistry: PluginRegistry { }
   property BarWidgetRegistry barWidgetRegistry: BarWidgetRegistry { }
-  property AppLibrary appLibrary: AppLibrary { }
+  property AppLibrary appLibrary: AppLibrary {
+    hideKdeApps: (shell.shellConfig && shell.shellConfig.launcher && shell.shellConfig.launcher.hideKdeApps !== undefined) ? !!shell.shellConfig.launcher.hideKdeApps : true
+  }
   property BrightnessKeys brightnessKeys: BrightnessKeys { host: shell }
   property BackgroundIntro bootIntro: BackgroundIntro { host: shell }
   property BackgroundSwitch backgroundSwitch: BackgroundSwitch { intro: shell.bootIntro }

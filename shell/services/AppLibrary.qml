@@ -14,7 +14,10 @@ Item {
   property string omarchyPath: Quickshell.env("OMARCHY_PATH")
 
   property var configuredHiddenEntryIds: ({})
+  property var userHiddenEntryIds: ({})
+  property var whitelistedEntryIds: ({})
   property var desktopHiddenEntryIds: ({})
+  property bool hideKdeApps: true
 
   // Maps an icon name to a file on disk (e.g. "omacut" -> ".../apps/omacut.svg").
   // Used as a fallback for icons that Qt's themed lookup misses because they were
@@ -44,9 +47,47 @@ Item {
     return AppSearch.entrySubtext(entry)
   }
 
+  function isKdeEntry(entry) {
+    if (!entry) return false
+    var id = String(entry.id || "").toLowerCase()
+
+    if (id.indexOf("org.kde.") === 0 ||
+        id.indexOf("kcm_") === 0 ||
+        id.indexOf("plasma") === 0 ||
+        id.indexOf("kwin") === 0 ||
+        id === "kdesystemsettings" ||
+        id === "systemsettings" ||
+        id === "konqbrowser" ||
+        id.indexOf("kde") === 0) {
+      return true
+    }
+
+    try {
+      var cats = entry.categories || []
+      for (var i = 0; i < cats.length; i++) {
+        if (String(cats[i]).toUpperCase() === "KDE") return true
+      }
+    } catch (e) {
+    }
+
+    try {
+      var exec = String(entry.execString || "").toLowerCase()
+      if (exec.indexOf("kcmshell") >= 0 || exec.indexOf("systemsettings") >= 0) return true
+    } catch (e) {
+    }
+
+    return false
+  }
+
   function isHiddenEntry(entry) {
-    var id = String((entry && entry.id) || "")
-    return root.configuredHiddenEntryIds[id] === true || root.desktopHiddenEntryIds[id] === true
+    if (!entry) return false
+    var id = String(entry.id || "")
+    if (root.whitelistedEntryIds[id] === true) return false
+    if (root.userHiddenEntryIds[id] === true) return true
+    if (root.configuredHiddenEntryIds[id] === true) return true
+    if (root.desktopHiddenEntryIds[id] === true) return true
+    if (root.hideKdeApps && root.isKdeEntry(entry)) return true
+    return false
   }
 
   function sortedEntries(query) {
@@ -109,6 +150,7 @@ Item {
 
   function normalizeDesktopId(id) {
     var value = String(id || "").trim()
+    if (value.length === 0 || value.charAt(0) === "#") return ""
     if (value.slice(-8) === ".desktop") value = value.slice(0, -8)
     return value
   }
@@ -121,6 +163,28 @@ Item {
       if (id.length > 0) next[id] = true
     }
     root.configuredHiddenEntryIds = next
+    root.appsChanged()
+  }
+
+  function loadUserHiddenEntries(rawText) {
+    var next = ({})
+    var lines = String(rawText || "").split(/\n/)
+    for (var i = 0; i < lines.length; i++) {
+      var id = root.normalizeDesktopId(lines[i])
+      if (id.length > 0) next[id] = true
+    }
+    root.userHiddenEntryIds = next
+    root.appsChanged()
+  }
+
+  function loadWhitelistedEntries(rawText) {
+    var next = ({})
+    var lines = String(rawText || "").split(/\n/)
+    for (var i = 0; i < lines.length; i++) {
+      var id = root.normalizeDesktopId(lines[i])
+      if (id.length > 0) next[id] = true
+    }
+    root.whitelistedEntryIds = next
     root.appsChanged()
   }
 
@@ -240,6 +304,24 @@ Item {
     onLoaded: root.loadConfiguredHides(text())
     onFileChanged: root.loadConfiguredHides(text())
     onLoadFailed: root.loadConfiguredHides("")
+  }
+
+  FileView {
+    path: Quickshell.env("HOME") + "/.config/omarchy/launcher.hides"
+    watchChanges: true
+    printErrors: false
+    onLoaded: root.loadUserHiddenEntries(text())
+    onFileChanged: root.loadUserHiddenEntries(text())
+    onLoadFailed: root.loadUserHiddenEntries("")
+  }
+
+  FileView {
+    path: Quickshell.env("HOME") + "/.config/omarchy/launcher.whitelist"
+    watchChanges: true
+    printErrors: false
+    onLoaded: root.loadWhitelistedEntries(text())
+    onFileChanged: root.loadWhitelistedEntries(text())
+    onLoadFailed: root.loadWhitelistedEntries("")
   }
 
   Connections {

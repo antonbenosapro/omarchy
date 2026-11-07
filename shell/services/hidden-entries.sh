@@ -70,7 +70,7 @@ scan_dir() {
   local dir=$1
   local file id
 
-  [[ -d $dir ]] || return
+  [[ -d $dir ]] || return 0
 
   while IFS= read -r -d '' file; do
     id=${file#"$dir"/}
@@ -93,3 +93,5 @@ for data_dir in "${data_dirs[@]}"; do
 done
 
 scan_dir "$HOME/.nix-profile/share/applications"
+
+exit 0
