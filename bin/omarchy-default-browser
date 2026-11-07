@@ -19,7 +19,7 @@ if (($# == 0)); then
   brave-origin.desktop) echo "brave-origin" ;;
   microsoft-edge.desktop) echo "edge" ;;
   firefox.desktop) echo "firefox" ;;
-  zen.desktop) echo "zen" ;;
+  zen.desktop|app.zen_browser.zen.desktop) echo "zen" ;;
   *) echo "$current_browser" ;;
   esac
   exit 0
@@ -32,7 +32,16 @@ brave) browser="brave"; command="brave"; desktop_id="brave-browser.desktop"; nam
 brave-origin) browser="brave-origin"; command="brave-origin"; desktop_id="brave-origin.desktop"; name="Brave Origin"; glyph=󰖟 ;;
 edge) browser="edge"; command="microsoft-edge-stable"; desktop_id="microsoft-edge.desktop"; name="Edge"; glyph=󰇩 ;;
 firefox) browser="firefox"; command="firefox"; desktop_id="firefox.desktop"; name="Firefox"; glyph=󰈹 ;;
-zen) browser="zen"; command="zen-browser"; desktop_id="zen.desktop"; name="Zen"; glyph=󰖟 ;;
+zen)
+  browser="zen"
+  command="zen-browser"
+  desktop_id="zen.desktop"
+  if [[ ! -f /usr/share/applications/zen.desktop && ! -f ~/.local/share/applications/zen.desktop ]]; then
+    desktop_id="app.zen_browser.zen.desktop"
+  fi
+  name="Zen"
+  glyph=󰖟
+  ;;
 *)
   echo "Usage: omarchy-default-browser <chromium|chrome|brave|brave-origin|edge|firefox|zen>"
   exit 1

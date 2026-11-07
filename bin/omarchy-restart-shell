@@ -107,7 +107,9 @@ done
 
 # Spawn from Hyprland so the shell inherits the canonical session environment,
 # not transient variables from a terminal, SSH connection, or development tool.
-hyprctl dispatch 'hl.dsp.exec_cmd("omarchy-launch-shell")' >/dev/null
+if ! hyprctl dispatch 'hl.dsp.exec_cmd("omarchy-launch-shell")' >/dev/null 2>&1; then
+  systemctl --user restart active-desktop-shell 2>/dev/null || hyprctl dispatch exec omarchy-launch-shell >/dev/null 2>&1
+fi
 
 shell_ready=0
 # The shell answers once its plugins have loaded, which on a large bar is

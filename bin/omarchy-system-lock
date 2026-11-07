@@ -5,7 +5,10 @@
 # omarchy:name=lock
 # omarchy:examples=omarchy system lock
 
-omarchy-shell lock lock >/dev/null
+lock_res=$(omarchy-shell lock lock 2>/dev/null)
+if [[ "$lock_res" == "missing-pam" || "$lock_res" != "ok" ]]; then
+  pidof hyprlock || hyprlock &
+fi
 
 # Set keyboard layout to default (first layout)
 hyprctl switchxkblayout all 0 > /dev/null 2>&1

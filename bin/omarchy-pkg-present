@@ -3,8 +3,86 @@
 # omarchy:summary=Returns true if all of the named packages are installed on the system (or false if any of them are missing).
 # omarchy:args=<packages...>
 
+is_single_pkg_present() {
+  local pkg="$1"
+  [[ -z "$pkg" ]] && return 0
+
+  # Check native pacman if on Arch Linux
+  if command -v pacman &>/dev/null && pacman -Q -- "$pkg" &>/dev/null; then
+    return 0
+  fi
+
+  # Check native Debian dpkg status
+  if dpkg -s "$pkg" 2>/dev/null | grep -q "Status: install ok installed"; then
+    return 0
+  fi
+
+  # Explicit mappings for common cross-distro & flatpak apps
+  case "$pkg" in
+    google-chrome*)
+      command -v google-chrome &>/dev/null || command -v google-chrome-stable &>/dev/null ;;
+    zen-browser*)
+      command -v zen-browser &>/dev/null || command -v zen &>/dev/null || (command -v flatpak &>/dev/null && flatpak info app.zen_browser.zen &>/dev/null) ;;
+    cursor-bin|cursor)
+      command -v cursor &>/dev/null ;;
+    visual-studio-code*|code)
+      command -v code &>/dev/null ;;
+    sublime*)
+      command -v subl &>/dev/null || command -v sublime_text &>/dev/null ;;
+    helix)
+      command -v hx &>/dev/null || command -v helix &>/dev/null ;;
+    zed)
+      command -v zed &>/dev/null || command -v zeditor &>/dev/null ;;
+    alacritty)
+      command -v alacritty &>/dev/null ;;
+    foot)
+      command -v foot &>/dev/null ;;
+    ghostty)
+      command -v ghostty &>/dev/null ;;
+    kitty)
+      command -v kitty &>/dev/null ;;
+    spotify)
+      command -v spotify &>/dev/null || (command -v flatpak &>/dev/null && flatpak info com.spotify.Client &>/dev/null) || [[ -f $HOME/.local/share/applications/Spotify.desktop ]] ;;
+    steam)
+      command -v steam &>/dev/null ;;
+    retroarch)
+      command -v retroarch &>/dev/null ;;
+    lutris)
+      command -v lutris &>/dev/null ;;
+    heroic*)
+      command -v heroic &>/dev/null || (command -v flatpak &>/dev/null && flatpak info com.heroicgameslauncher.hgl &>/dev/null) ;;
+    minecraft*)
+      command -v minecraft-launcher &>/dev/null || [[ -f $HOME/.local/share/applications/minecraft-launcher.desktop ]] ;;
+    1password)
+      command -v 1password &>/dev/null ;;
+    bitwarden)
+      command -v bitwarden &>/dev/null || (command -v flatpak &>/dev/null && flatpak info com.bitwarden.desktop &>/dev/null) ;;
+    signal*)
+      command -v signal-desktop &>/dev/null || (command -v flatpak &>/dev/null && flatpak info org.signal.Signal &>/dev/null) ;;
+    slack*)
+      command -v slack &>/dev/null || (command -v flatpak &>/dev/null && flatpak info com.slack.Slack &>/dev/null) ;;
+    tailscale)
+      command -v tailscale &>/dev/null ;;
+    ollama)
+      command -v ollama &>/dev/null ;;
+    fprintd)
+      dpkg -s fprintd 2>/dev/null | grep -q installed || command -v fprintd-verify &>/dev/null ;;
+    pam-u2f)
+      dpkg -s libpam-u2f 2>/dev/null | grep -q installed || [[ -f /lib/security/pam_u2f.so || -f /usr/lib/x86_64-linux-gnu/security/pam_u2f.so ]] ;;
+    *)
+      local clean="${pkg%-bin}"
+      clean="${clean%-git}"
+      clean="${clean%-desktop}"
+      clean="${clean%-launcher}"
+      command -v "$clean" &>/dev/null || \
+      dpkg -s "$clean" 2>/dev/null | grep -q "Status: install ok installed" || \
+      (command -v flatpak &>/dev/null && flatpak list --columns=application 2>/dev/null | grep -qi "$clean")
+      ;;
+  esac
+}
+
 for pkg in "$@"; do
-  pacman -Q -- "$pkg" &>/dev/null || exit 1
+  is_single_pkg_present "$pkg" || exit 1
 done
 
 exit 0

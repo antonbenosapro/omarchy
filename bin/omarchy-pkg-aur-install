@@ -1,30 +1,56 @@
 #!/bin/bash
 
-# omarchy:summary=Show a fuzzy-finder TUI for picking new AUR packages to install.
-# omarchy:requires-sudo=true
+# omarchy:summary=Show a fuzzy-finder TUI for picking new AUR or Flatpak packages to install.
 
-fzf_args=(
-  --multi
-  --preview 'yay -Siia {1}'
-  --preview-label='alt-p: toggle description, alt-b/B: toggle PKGBUILD, alt-j/k: scroll, tab: multi-select'
-  --preview-label-pos='bottom'
-  --preview-window 'down:65%:wrap'
-  --bind 'alt-p:toggle-preview'
-  --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
-  --bind 'alt-k:preview-up,alt-j:preview-down'
-  --bind 'alt-b:change-preview:yay -Gpa {1} | tail -n +5'
-  --bind 'alt-B:change-preview:yay -Siia {1}'
-  --color 'pointer:green,marker:green'
-)
+if command -v yay &>/dev/null; then
+  fzf_args=(
+    --multi
+    --preview 'yay -Siia {1}'
+    --preview-label='alt-p: toggle description, alt-b/B: toggle PKGBUILD, alt-j/k: scroll, tab: multi-select'
+    --preview-label-pos='bottom'
+    --preview-window 'down:65%:wrap'
+    --bind 'alt-p:toggle-preview'
+    --bind 'alt-d:preview-half-page-down,alt-u:preview-half-page-up'
+    --bind 'alt-k:preview-up,alt-j:preview-down'
+    --bind 'alt-b:change-preview:yay -Gpa {1} | tail -n +5'
+    --bind 'alt-B:change-preview:yay -Siia {1}'
+    --color 'pointer:green,marker:green'
+  )
 
-pkg_names=$(yay -Slqa | fzf "${fzf_args[@]}")
+  pkg_names=$(yay -Slqa | fzf "${fzf_args[@]}")
 
-if [[ -n $pkg_names ]]; then
-  # Add aur/ prefix to each package name and convert to space-separated for yay
-  source omarchy-sudo-keepalive
+  if [[ -n $pkg_names ]]; then
+    source omarchy-sudo-keepalive
+    echo "$pkg_names" | sed 's/^/aur\//' | tr '\n' ' ' | xargs yay -S --noconfirm
+    code=$?
+    sudo updatedb --prune-bind-mounts=no --add-prunepaths=/.snapshots 2>/dev/null || true
+    omarchy-show-done $code
+  fi
+else
+  # Debian Flathub search & install
+  query=$(gum input --prompt="Search Flatpak / Flathub: " --placeholder="app name or keyword")
+  [[ -z "$query" ]] && exit 0
 
-  echo "$pkg_names" | sed 's/^/aur\//' | tr '\n' ' ' | xargs yay -S --noconfirm
-  code=$?
-  sudo updatedb --prune-bind-mounts=no --add-prunepaths=/.snapshots
-  omarchy-show-done $code
+  results=$(flatpak search "$query" 2>/dev/null | tail -n +1)
+  if [[ -z "$results" ]]; then
+    echo "No Flatpak packages found matching '$query'."
+    exit 0
+  fi
+
+  fzf_args=(
+    --header "Select Flatpak application to install"
+    --preview 'flatpak remote-info flathub {3} 2>/dev/null || echo {2}'
+    --preview-window 'down:50%:wrap'
+    --delimiter '\t'
+  )
+
+  selected=$(echo "$results" | fzf "${fzf_args[@]}")
+  if [[ -n "$selected" ]]; then
+    app_id=$(echo "$selected" | awk -F '\t' '{print $3}')
+    [[ -z "$app_id" ]] && app_id=$(echo "$selected" | awk '{print $3}')
+    if [[ -n "$app_id" ]]; then
+      flatpak install -y flathub "$app_id"
+      omarchy-show-done $?
+    fi
+  fi
 fi

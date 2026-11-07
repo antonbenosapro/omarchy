@@ -22,4 +22,9 @@ if [[ -n ${LC_ALL:-} ]]; then
   env_args+=(LC_ALL="$LC_ALL")
 fi
 
+if ! command -v pacman &>/dev/null; then
+  sudo env "${env_args[@]}" "${scope[@]}" apt-get update
+  exec sudo env "${env_args[@]}" "${scope[@]}" apt-get upgrade -y
+fi
+
 exec sudo env "${env_args[@]}" "${scope[@]}" pacman "$@"

@@ -11,8 +11,11 @@ if [[ ${1:-} == "--install" ]]; then
 fi
 
 if (($# == 0)); then
-  desktop_id=$(xdg-terminal-exec --print-id 2>/dev/null || true)
-  desktop_id=${desktop_id%%:*}
+  desktop_id=""
+  if [[ -f ~/.config/xdg-terminals.list ]]; then
+    desktop_id=$(grep -E '^[a-zA-Z0-9.-]+\.desktop' ~/.config/xdg-terminals.list | head -n 1)
+  fi
+  [[ -z "$desktop_id" ]] && desktop_id="kitty.desktop"
   case "$desktop_id" in
   Alacritty.desktop) echo "alacritty" ;;
   foot.desktop) echo "foot" ;;

@@ -512,7 +512,7 @@ function guardHelpers() {
     + guardPackageSnapshot()
     + 'for __omarchy_pkg in "${__omarchy_pkg_names[@]}"; do __omarchy_pkgs[$__omarchy_pkg]=1; done\n'
     + '__omarchy_pkg_has() { [[ -n ${__omarchy_pkgs[$1]-} ]] && return 0; '
-    + '[[ $1 == *[\\<\\>=]* ]] && { pacman -Q "$1" &>/dev/null; return; }; return 1; }\n'
+    + 'command omarchy-pkg-present "$1" &>/dev/null && return 0; return 1; }\n'
     + 'omarchy-pkg-present() { local p; for p in "$@"; do __omarchy_pkg_has "$p" || return 1; done; return 0; }\n'
     + 'omarchy-pkg-missing() { local p; for p in "$@"; do __omarchy_pkg_has "$p" || return 0; done; return 1; }\n'
     + 'omarchy-cmd-present() { local c; for c in "$@"; do command -v "$c" &>/dev/null || return 1; done; return 0; }\n'
@@ -611,7 +611,7 @@ function guardScript(items) {
   }
 
   var script = guardPrelude(lines.join("")) + "__omarchy_groups=()\n"
-  for (var k = 0; k < groups.length; k++) script += "{\n" + groups[k] + "} &\n__omarchy_groups+=($!)\n"
+  for (var k = 0; k < groups.length; k++) script += "{\n" + groups[k] + "\nexit 0\n} &\n__omarchy_groups+=($!)\n"
   return script + "__omarchy_failed=0\n"
     + 'for __omarchy_group in "${__omarchy_groups[@]}"; do wait "$__omarchy_group" || __omarchy_failed=1; done\n'
     + "((__omarchy_failed == 0))\n"
