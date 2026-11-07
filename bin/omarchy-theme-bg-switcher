@@ -8,7 +8,24 @@
 theme_name=$(cat "$HOME/.local/state/omarchy/current/theme.name" 2>/dev/null)
 current_background=$(readlink -f "$HOME/.local/state/omarchy/current/background" 2>/dev/null)
 
+bg_dirs=()
+[[ -d "$HOME/.local/state/omarchy/current/theme/backgrounds" ]] && bg_dirs+=("$HOME/.local/state/omarchy/current/theme/backgrounds")
+[[ -n "$theme_name" && -d "$HOME/.config/omarchy/backgrounds/$theme_name" ]] && bg_dirs+=("$HOME/.config/omarchy/backgrounds/$theme_name")
+[[ -d "$HOME/.config/omarchy/backgrounds" ]] && bg_dirs+=("$HOME/.config/omarchy/backgrounds")
+
+aether_folder=$(python3 -c "import json, os; p = os.path.expanduser('~/.config/aether/settings.json'); print(json.load(open(p)).get('wallpaperFolder', '')) if os.path.exists(p) else ''" 2>/dev/null)
+[[ -z "$aether_folder" ]] && aether_folder="$HOME/Wallpapers"
+
+if [[ -d "$aether_folder" ]]; then
+  bg_dirs+=("$aether_folder")
+  while IFS= read -r subdir; do
+    [[ -d "$subdir" ]] && bg_dirs+=("$subdir")
+  done < <(find -L "$aether_folder" -mindepth 1 -maxdepth 2 -type d 2>/dev/null)
+fi
+
+[[ -d "$HOME/Pictures/Wallpapers" ]] && bg_dirs+=("$HOME/Pictures/Wallpapers")
+[[ -d "$HOME/.local/share/aether/wallpapers" ]] && bg_dirs+=("$HOME/.local/share/aether/wallpapers")
+
 omarchy-menu-images \
   --selected "$current_background" \
-  "$HOME/.local/state/omarchy/current/theme/backgrounds" \
-  "$HOME/.config/omarchy/backgrounds/$theme_name"
+  "${bg_dirs[@]}"

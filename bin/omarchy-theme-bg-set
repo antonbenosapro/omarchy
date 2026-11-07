@@ -29,3 +29,7 @@ if [[ $(omarchy-shell shell switchBackground "$BACKGROUND" "$INTRO" 2>/dev/null)
   ln -nsf "$BACKGROUND" "$CURRENT_BACKGROUND_LINK"
   omarchy-shell -q background set "$BACKGROUND"
 fi
+
+# Synchronize theme hooks, Material You palette extraction, and Hyprland scheme
+WALLPAPER_PATH="$BACKGROUND" /home/anton/.local/bin/apply-theme-hook >/dev/null 2>&1 &
+caelestia wallpaper -f "$BACKGROUND" >/dev/null 2>&1 &
