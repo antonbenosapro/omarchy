@@ -106,7 +106,7 @@ set_scale() {
   if (( others > 0 )); then
     omarchy-hyprland-monitor-layout --resized "$active_monitor" "${width}x${height}" "$current_scale" "${width}x${height}" "$new_scale" "$mode"
   else
-    hyprctl eval "hl.monitor({ output = \"$active_monitor\", mode = \"$mode\", position = \"auto\", scale = $new_scale })" >/dev/null
+    hyprctl keyword monitor "$active_monitor,$mode,auto,$new_scale" >/dev/null 2>&1 || hyprctl eval "hl.monitor({ output = \"$active_monitor\", mode = \"$mode\", position = \"auto\", scale = $new_scale })" >/dev/null
   fi
   audit_scale_change "$requested" "$active_monitor" "$current_scale" "$new_scale"
 }

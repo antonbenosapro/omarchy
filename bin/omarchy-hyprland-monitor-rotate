@@ -88,5 +88,5 @@ others=$(hyprctl monitors -j | jq --arg name "$active_monitor" '[.[] | select(.n
 if (( others > 0 )); then
   omarchy-hyprland-monitor-layout --resized "$active_monitor" "${width}x${height}" "$scale" "$new_size" "$scale" "$mode" "$transform"
 else
-  hyprctl eval "hl.monitor({ output = \"$active_monitor\", mode = \"$mode\", position = \"auto\", scale = $scale, transform = $transform })" >/dev/null
+  hyprctl keyword monitor "$active_monitor,$mode,auto,$scale,transform,$transform" >/dev/null 2>&1 || hyprctl eval "hl.monitor({ output = \"$active_monitor\", mode = \"$mode\", position = \"auto\", scale = $scale, transform = $transform })" >/dev/null
 fi

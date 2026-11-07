@@ -121,7 +121,37 @@ for arg in "$@"; do
   fi
 done
 
-hyprctl eval "$expr" >/dev/null
+eval_out=$(hyprctl eval "$expr" 2>&1)
+if [[ "$eval_out" == *"only supported"* || "$eval_out" == *"error"* ]] || ! hyprctl eval "$expr" >/dev/null 2>&1; then
+  for i in "${!names[@]}"; do
+    m_name="${names[i]}"
+    m_pos="${positions[i]}"
+    m_info=$(jq -c --arg name "$m_name" '.[] | select(.name == $name)' <<<"$monitors_json")
+    m_w=$(jq -r '.width' <<<"$m_info")
+    m_h=$(jq -r '.height' <<<"$m_info")
+    m_r=$(jq -r '.refreshRate | tonumber | . * 100 | round / 100' <<<"$m_info" | sed -E 's/\.0+$//')
+    m_s=$(jq -r '.scale | tonumber | . * 100 | round / 100' <<<"$m_info" | sed -E 's/\.0+$//')
+    m_t=$(jq -r '.transform // 0' <<<"$m_info")
+
+    if [[ "$m_name" == "$resized_name" ]]; then
+      m_mode="${resized_mode:-${m_w}x${m_h}@${m_r}}"
+      m_scale="${resized_scale:-$m_s}"
+      m_trans="${resized_transform:-$m_t}"
+    else
+      m_mode="${m_w}x${m_h}@${m_r}"
+      m_scale="$m_s"
+      m_trans="$m_t"
+    fi
+
+    m_opt=""
+    [[ -n "$m_trans" && "$m_trans" != "0" ]] && m_opt=",transform,$m_trans"
+
+    hyprctl keyword monitor "$m_name,$m_mode,$m_pos,$m_scale$m_opt" >/dev/null 2>&1 || true
+    if [[ -f ~/.config/hypr/hyprland.conf ]]; then
+      sed -i -E "s|^monitor = $m_name,.*|monitor = $m_name, $m_mode, $m_pos, $m_scale$m_opt|" ~/.config/hypr/hyprland.conf 2>/dev/null || true
+    fi
+  done
+fi
 
 for i in "${!names[@]}"; do
   # The resized monitor saves the scale it was given, not one read back from

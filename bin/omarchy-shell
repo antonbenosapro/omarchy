@@ -37,6 +37,7 @@ USAGE
 fi
 
 (( $# >= 2 )) || fail "Usage: omarchy-shell <target> <method> [args...]"
+: "${OMARCHY_PATH:=/home/anton/shells/omarchy}"
 [[ -n ${OMARCHY_PATH:-} ]] || fail "OMARCHY_PATH is not set"
 [[ -f $OMARCHY_PATH/shell/shell.qml ]] || fail "omarchy-shell config not found: $OMARCHY_PATH/shell/shell.qml"
 
