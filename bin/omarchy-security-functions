@@ -52,6 +52,8 @@ omarchy_security_sanitize_bash_environment() {
 omarchy_security_require_source_root() {
   local command_source command_name=${1##*/}
   command_source=$(/usr/bin/readlink -e -- "$1") || return 1
+  : "${OMARCHY_PATH:=/home/anton/shells/omarchy}"
+  export OMARCHY_PATH
 
   # A runtime root selects the code used by this invocation. Accept the
   # canonical checkout containing the entrypoint or the package's bin links.

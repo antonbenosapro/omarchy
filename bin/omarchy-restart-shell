@@ -6,7 +6,7 @@
 # A caller opened after dev link/unlink may disagree with the still-running
 # desktop. The user manager receives Hyprland's environment at session start.
 session_omarchy_path=$(systemctl --user show-environment 2>/dev/null | sed -n 's/^OMARCHY_PATH=//p' | tail -n 1)
-: "${session_omarchy_path:=$OMARCHY_PATH}"
+: "${session_omarchy_path:=${OMARCHY_PATH:-/home/anton/shells/omarchy}}"
 
 CONFIG_DIR="$session_omarchy_path/shell"
 [[ -f $CONFIG_DIR/shell.qml ]] || { echo "Omarchy shell config not found: $CONFIG_DIR" >&2; exit 1; }
@@ -16,6 +16,11 @@ CONFIG_DIR="$session_omarchy_path/shell"
 if [[ -z ${HYPRLAND_INSTANCE_SIGNATURE:-} ]]; then
   hypr_dir=$(find "${XDG_RUNTIME_DIR:-/run/user/$UID}/hypr" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -n 1 | cut -d' ' -f2-)
   [[ -n $hypr_dir ]] && export HYPRLAND_INSTANCE_SIGNATURE=${hypr_dir##*/}
+fi
+
+if ! omarchy-hyprland-session-locked && systemctl --user is-active active-desktop-shell >/dev/null 2>&1; then
+  systemctl --user restart active-desktop-shell
+  exit 0
 fi
 
 # Restarting a live lock client would kill the lock screen and strand the
