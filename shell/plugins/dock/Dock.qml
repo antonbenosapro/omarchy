@@ -20,6 +20,7 @@ Item {
   readonly property string position: DockModel.normalizePosition(dockConfig.position)
   readonly property bool vertical: DockModel.isVertical(position)
   readonly property bool autohide: dockConfig.autohide === true
+  readonly property bool alwaysShow: (dockConfig && dockConfig.alwaysShow !== undefined) ? !!dockConfig.alwaysShow : true
 
   // The dock's order for the session, as desktop ids, set when the user moves
   // an app: a drag moves it, and keeping it in the dock puts it at the end. An

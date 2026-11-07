@@ -3,6 +3,7 @@
 # omarchy:summary=Shared helpers for editing ~/.config/omarchy/shell.json (source this, don't run it).
 # omarchy:hidden=true
 
+OMARCHY_PATH="${OMARCHY_PATH:-$HOME/shells/omarchy}"
 CONFIG_FILE="$HOME/.config/omarchy/shell.json"
 DEFAULTS_FILE="$OMARCHY_PATH/config/omarchy/shell.json"
 
