@@ -4,6 +4,48 @@ Omarchy is a beautiful, fun & agentic Linux distribution by DHH.
 
 Read more at [omarchy.org](https://omarchy.org).
 
+---
+
+## Distro-Agnostic Port Notes (`@antonbenosapro` Fork)
+
+Upstream Omarchy was originally designed as a monolithic desktop shell tailored specifically for Arch Linux (`pacman`, `yay`, and Arch filesystem paths). This fork introduces a modular, distro-agnostic portability layer developed and tested on **Debian GNU/Linux Trixie (13)** with dual-monitor **Hyprland**, while retaining full compatibility with Arch and opening up deployment across other distributions.
+
+### Key Architectural Porting Enhancements
+
+1. **Modular Package Management Abstraction (`omarchy-pkg-*`)**:
+   - Replaced hardcoded `pacman` and `yay` commands with dynamic OS detection.
+   - Native support for **Debian GNU/Linux** (`dpkg-query`, `apt-get`), **Arch Linux** (`pacman`, `yay`), and universal **Flatpak** applications.
+   - Easily extensible to RPM-based distributions (e.g. Fedora with `dnf` or openSUSE with `zypper`) by extending the `omarchy-pkg-*` shims.
+   - Application uninstaller (`omarchy-remove-launcher-entry`) ported to execute `sudo apt-get remove --purge`, `flatpak uninstall`, and user desktop entry removal.
+
+2. **Decoupled Session & Compositor Lifecycle**:
+   - Removed hardcoded reliance on Arch's `uwsm` session wrapper.
+   - Session logout cleanly falls back to native Hyprland IPC (`hyprctl dispatch exit`).
+   - Screen lock delegates directly to native Debian PAM `hyprlock`.
+   - Shell execution managed via `systemd-run --user --unit=active-desktop-shell` with automatic recovery and environment variable propagation.
+
+3. **Native Hyprland Multi-Monitor & DDC/CI Controls**:
+   - Replaced non-portable Lua monitor evaluation scripts with direct `hyprctl keyword monitor` dispatches.
+   - Adjacent monitor coordinates automatically recalculate on scaling or mode changes to eliminate gaps and overlaps across multi-monitor setups.
+   - Hardware DDC/CI external monitor brightness controls via `/dev/i2c` and `ddcutil`.
+
+4. **Standard FreeDesktop & XDG Compliance**:
+   - Application launcher indexes standard XDG directories (`/usr/share/applications` and `~/.local/share/applications`) with robust `.desktop` ID suffix normalization.
+   - Automated KDE Plasma internal module filtering in `AppLibrary.qml`, with support for user custom blacklist (`~/.config/omarchy/launcher.hides`) and whitelist (`~/.config/omarchy/launcher.whitelist`).
+   - Standard icon theme (`Papirus-Dark`) and font rendering (`JetBrainsMono Nerd Font` and `Noto Sans`).
+
+5. **Tiling Window Manager Dock Visibility**:
+   - Added `alwaysShow` support to `Dock.qml` and `DockWindow.qml` so pinned apps and dock stay visible and functional across tiling workspaces instead of staying hidden on `dwindle` layouts.
+
+### Prerequisites for Any Distro
+
+To run this shell on any Linux distribution:
+* **Compositor**: [Hyprland](https://hyprland.org) (Wayland).
+* **Shell Runtime**: [Quickshell](https://quickshell.outfoxxed.me) (can be built natively or installed via universal Nix package manager on any distro).
+* **Core Subsystems**: PipeWire / WirePlumber (audio), NetworkManager (networking), and standard FreeDesktop portals.
+
+---
+
 ## The Omarchy Manual
 
 The manual lives in [`manual/`](manual/), which is its authoritative source.
