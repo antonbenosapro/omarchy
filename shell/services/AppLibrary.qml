@@ -49,7 +49,7 @@ Item {
 
   function isKdeEntry(entry) {
     if (!entry) return false
-    var id = String(entry.id || "").toLowerCase()
+    var id = root.normalizeDesktopId(entry.id).toLowerCase()
 
     if (id.indexOf("org.kde.") === 0 ||
         id.indexOf("kcm_") === 0 ||
@@ -81,7 +81,9 @@ Item {
 
   function isHiddenEntry(entry) {
     if (!entry) return false
-    var id = String(entry.id || "")
+    // Quickshell may report ids with the ".desktop" suffix (e.g. on Debian),
+    // while the hide/whitelist files and the desktop scan use bare ids.
+    var id = root.normalizeDesktopId(entry.id)
     if (root.whitelistedEntryIds[id] === true) return false
     if (root.userHiddenEntryIds[id] === true) return true
     if (root.configuredHiddenEntryIds[id] === true) return true
